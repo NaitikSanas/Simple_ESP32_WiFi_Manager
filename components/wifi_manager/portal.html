@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>WiFi Manager</title>
+  <style>
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background-color: #080808;
+    }
+
+    h1 {
+      color: #ffffff;
+      margin-top: 20px;
+    }
+
+    h4 {
+      align-self: left;
+      text-align: left;
+      color: #dbdbdb;
+      margin-block: 10px;
+    }
+
+    .list-container {
+      border: 1px solid #000000;
+      padding: 10px;
+      margin-bottom: 20px;
+      width: 300px;
+      background-color: #fff;
+      border-radius: 10px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+
+    .list-item {
+      padding: 10px;
+      cursor: pointer;
+      border-radius: 10px;
+      transition: background-color 0.3s ease;
+    }
+
+    .list-item:hover { 
+      border-radius: 10px;
+      background-color: #f2f2f2;
+    }
+
+    .list-item.selected {
+      border-radius: 10px;
+      background-color: #3399ff;
+      color: #fff;
+    }
+
+    .form-container {
+      border: 1px solid #000000;
+      text-align: left;
+      margin-top: 10px;
+      background-color: #fff;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+      display: none;
+      width: 300px;
+    }
+
+    .form-container label {
+      display: block;
+      margin-bottom: 10px;
+      text-align: left;
+      color: #333;
+    }
+
+    .form-container label span {
+      font-weight: normal;
+    }
+
+    .form-container input[type="text"] {
+      padding: 10px;
+      width: 80%;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      font-size: 14px;
+    }
+
+    .form-container input[type="password"] {
+      padding: 10px;
+      width: 80%;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      font-size: 14px;
+    }
+
+    .form-container button {
+      padding: 10px 16px;
+      margin-top: 10px;
+      background-color: #3399ff;
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    #status-text {
+      border: 1px solid #000000;
+      display: block;
+      margin: 10px auto;
+      margin-top: 10px;
+      text-align: center;
+      width: 300px;
+      padding: 10px;
+      background-color: #fff;
+      border-radius: 10px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+      color: #333;
+    }
+
+    button {
+      padding: 10px 16px;
+      background-color: #3399ff;
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      font-size: 14px;
+      cursor: pointer;
+      margin-right: 10px;
+      transition: background-color 0.3s ease;
+    }
+
+    button:hover {
+      background-color: #2073b3;
+    }
+
+    button:active {
+      background-color: #53a8e0;
+    }
+
+    .green {
+      color: green;
+    }
+
+    .red {
+      color: red;
+    }
+  </style>
+</head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<body>
+  <h1>WiFi Manager</h1>
+
+  <h4>Status Bar</h4> 
+  <div> 
+    <input type="text" id="status-text" readonly> 
+  </div>
+
+
+  <h4>Available Networks</h4>
+  <div class="list-container" id="list-container">Click "Scan for WiFi" to get a list of available networks.</div>
+
+  <div>
+    <button id="scan-btn">Scan for WiFi</button>
+    <button id="manual-entry-btn">Enter Network Manually</button>
+  </div>
+
+  <div class="form-container" id="form-container" style="display: none;">
+    <!-- <form method="post" action="/handle-form"> -->
+      <label>
+        <span>WiFi Network:</span>
+        <input type="text" id="network-input" name="wifi_name" placeholder="Enter WiFi network">
+      </label>
+      <label>
+        <span>Password:</span>
+        <input type="password" id="password-input" name="wifi_pass" placeholder="Enter password">
+      </label>
+      <button id="submit-btn">Enter</button>
+    <!-- </form> -->
+  </div>
+
+  
+
+  <script>
+
+    
+    // JavaScript code here
+    //Function to update the status text field
+    function updateStatusText(status) {
+      const statusText = document.getElementById('status-text');
+      statusText.value = status;
+    }
+
+    // Send a request to get the status every 2000 ms
+    setInterval(() => {
+      var ajaxRequest = new XMLHttpRequest();
+      ajaxRequest.open('GET', '/get_wifi_status', true);
+      ajaxRequest.send();
+      ajaxRequest.onreadystatechange = function() {
+        if (ajaxRequest.readyState === 4 && ajaxRequest.status === 200) {
+          const response = ajaxRequest.responseText;
+          updateStatusText(response);
+        }
+      };
+    }, 2000);
+    // Function to update the list
+    function updateList(networks) {
+      const listContainer = document.getElementById('list-container');
+      listContainer.innerHTML = '';
+
+      if (networks.length === 0) {
+        listContainer.textContent = 'No networks found.';
+      } else {
+        networks.forEach((network) => {
+          const listItem = document.createElement('div');
+          listItem.textContent = network;
+          listItem.classList.add('list-item');
+          listItem.addEventListener('click', () => {
+            handleSelection(network, listItem);
+          });
+
+          listContainer.appendChild(listItem);
+        });
+      }
+    }
+
+    // Function to handle the timeout
+    function handleTimeout() {
+      const listContainer = document.getElementById('list-container');
+      if (listContainer.textContent === "Click \"Scan for WiFi\" to get a list of available networks.") {
+        listContainer.textContent = 'Retry scanning.';
+      }
+    }
+
+    // Function to simulate AJAX response with network list
+    
+    // Send a request to scan for WiFi networks when the button is clicked
+    const scanButton = document.getElementById('scan-btn');
+    scanButton.addEventListener('click', () => {
+      const listContainer = document.getElementById('list-container');
+      listContainer.textContent ="Click \"Scan for WiFi\" to get a list of available networks.";
+
+      const timeout = setTimeout(handleTimeout, 20000); // Wait for 10 seconds
+
+      // Simulate AJAX response
+      // simulateAjaxResponse();
+
+      // Clear the timeout if a response is received
+      // Uncomment the code below when using a real AJAX request
+      var ajaxRequest = new XMLHttpRequest();
+      ajaxRequest.open('GET', '/update-list', true);
+      ajaxRequest.send();
+      ajaxRequest.onreadystatechange = function() {
+        if (ajaxRequest.readyState === 4) {
+          if (ajaxRequest.status === 200) {
+            try {
+              const response = JSON.parse(ajaxRequest.responseText);
+              listContainer.innerHTML = ""; // Clear previous content
+
+              // Process the response and update the list
+              response.forEach(function(network) {
+                const listItem = document.createElement('div');
+                listItem.textContent = network;
+                listItem.classList.add('list-item');
+                listItem.addEventListener('click', () => {
+                  handleSelection(network, listItem);
+                });
+
+                listContainer.appendChild(listItem);
+              });
+            } catch (error) {
+              console.error("Error parsing JSON response:", error);
+              listContainer.innerHTML = "Error retrieving data";
+            }
+          } else {
+            console.log("Problem sending req");
+            listContainer.innerHTML = "Retry scanning";
+          }
+        }
+      };
+    });
+
+    // Handle network selection
+    function handleSelection(network, listItem) {
+      const listItems = document.getElementsByClassName('list-item');
+      for (let i = 0; i < listItems.length; i++) {
+        const item = listItems[i];
+        if (item === listItem) {
+          item.classList.add('selected');
+        } else {
+          item.classList.remove('selected');
+        } 
+      }
+
+      const selectedNetworkElement = document.getElementById('network-input');
+      selectedNetworkElement.value = network;
+
+      const formContainer = document.getElementById('form-container');
+      formContainer.style.display = 'block';
+    }
+
+    // Handle form submission
+    const submitButton = document.getElementById('submit-btn');
+    submitButton.addEventListener('click', (event) => {
+      event.preventDefault();
+
+      const networkInput = document.getElementById('network-input');
+      const passwordInput = document.getElementById('password-input');
+      const network = networkInput.value;
+      const password = passwordInput.value;
+
+      const data = {
+        network: network,
+        password: password,
+      };
+
+      const jsonData = JSON.stringify(data);
+      console.log('JSON data:', jsonData);
+
+      // Send the data to the server using AJAX
+      var ajaxRequest = new XMLHttpRequest();
+      ajaxRequest.open('POST', '/button-click', true);
+      ajaxRequest.setRequestHeader('Content-Type', 'application/json');
+      ajaxRequest.send(jsonData);
+    });
+
+    // Show manual network entry section when the button is clicked
+    const manualEntryButton = document.getElementById('manual-entry-btn');
+    manualEntryButton.addEventListener('click', () => {
+      const formContainer = document.getElementById('form-container');
+      formContainer.style.display = 'block';
+    });
+  </script>
+</body>
+</html>
