@@ -13,5 +13,5 @@ open_wifi_setup_poral();
 
 
 ### TODO : 
-Add management of multiple credentials. 
-Managing Connection to the network by prioritizing preferred NetworkName or RSSI.
+* Add management of multiple credentials. 
+* Managing Connection to the network by prioritizing preferred NetworkName or RSSI.
